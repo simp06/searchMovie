@@ -4,7 +4,7 @@ import React,{ Component }   from 'react';
 class App extends Component{
   constructor(props) {
     super(props);
-    this.url_api ="http://www.omdbapi.com/?apikey=d8e6ea9d";
+    this.url_api ="https://www.omdbapi.com/?apikey=d8e6ea9d";
     this.state={
       search:'',
       result :[],
@@ -62,7 +62,7 @@ class App extends Component{
     return true;
   }
   handleClick = ()=>{
-    console.log("afsafsafaf");
+   
   }
   
 
