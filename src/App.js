@@ -1,6 +1,6 @@
 import React,{ Component }   from 'react';
 
-
+import ListFavorito from './ListFavorito';
 class App extends Component{
   constructor(props) {
     super(props);
@@ -10,13 +10,15 @@ class App extends Component{
       result :[],
       response:true,
       error:false,
-      intervalIsSet:false
+      intervalIsSet:false,
+      mostrarDetalle:false,
+      favorito:false,
+      listFavoritos:null,
     }
    
   }
   componentDidMount() {
-   
-    this.getResultFromDb("");
+    this.buscarPelicula("");
   }
   onChange = e => {
     const { value } = e.target;
@@ -24,31 +26,28 @@ class App extends Component{
       search: value
     });
 
-    this.getResultFromDb(value);
+    this.buscarPelicula(value);
   };
   
-  getResultFromDb = (value) => {
+  buscarPelicula = (value) => {
       fetch( this.url_api+"&s='"+value+"'")
       .then(result => {
         return result.json();
       })
       .then(res =>{
-          console.log(res);
           if(res.Response==="False"){
             this.setState({response:res.Response,error:res.Error});
           }else{
             this.setState({result:res.Search});
           }
-          
          }
         );
-    
     };
    
   componentWillUnmount() {
-    this.getResultFromDb("");
+    this.buscarPelicula("");
   }
- isValidUrl = (string) => {
+ esValidUrl = (string) => {
     try {
       new URL(string);
       return true;
@@ -56,20 +55,36 @@ class App extends Component{
       return false;  
     }
   }
-  imgError = (image) => {
-    image.onerror = "";
-    image.src = "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2b/NC_403.svg/600px-NC_403.svg.png";
-    return true;
+  mostrarDetalle = (data)=>{
+    let elements = document.querySelectorAll('[data-imb='+data+']');
+     for (let element of elements) {
+        element.style.display = "block";
+    }
   }
-  handleClick = ()=>{
-   
+  agregarListadoFavorito = (titulo)=>{
+    this.setState({favorito:true});
+    let store = localStorage.getItem("favorito")==null?[]:JSON.parse(localStorage.getItem("favorito"));
+    if(!store.includes(titulo)){
+      store.push(titulo);
+    }
+    localStorage.setItem("favorito", JSON.stringify(store));
+    this.setState({listFavoritos:JSON.parse(localStorage.getItem("favorito"))});
   }
-  
-
  render(){
    const {result,error} =this.state;
     return (
       <div>
+         <div style={{ padding: "10px" }}>
+      <form>
+        <input
+          type="text"
+          onChange={this.onChange}
+          placeholder="ej:batman"
+          style={{ width: "200px" }}
+        />
+     
+        </form>
+      </div>
           {error && (typeof result==="undefined" || result.length===0) ?error : 
            <table>
            <thead>
@@ -78,40 +93,57 @@ class App extends Component{
              <th>Año</th>
              <th>Foto</th>
              </tr>
-             
            </thead>
             <tbody>
             { result.map(res => (
-             <tr key={res.imdbID} onClick={this.handleClick}>
+             <tr key={res.imdbID} onClick={() => this.mostrarDetalle(res.imdbID)}>
               <td>
-              <span style={{ color: "gray" }}> {res.Title} </span> 
-              </td> 
-              <td>
+              <span style={{ colodatar: "gray" }}> {res.Title} </span> 
+              </td>      
+              <td>  
               <span style={{ color: "gray" }}> {res.Year} </span>  
               </td> 
               <td>
-              <span>{this.isValidUrl(res.Poster)?<img src={res.Poster} width="40" height="40" alt={res.Title}></img>:res.Poster}</span>
+              <span>{this.esValidUrl(res.Poster)?<img src={res.Poster} width="40" height="40" alt={res.Title}></img>:res.Poster}</span>
               </td>
-             </tr>   
+              <td>
+              <button onClick={() => this.agregarListadoFavorito(res.Title)}>
+                Añadir a favoritos
+               </button>
+              </td>
+              <td>
+                <table data-imb={res.imdbID} style={{display: 'none' }}  >
+                  <thead>
+                  <tr>
+                  <th>imdbID</th>
+                  <th>Type</th>
+                  </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>{res.imdbID}</td>
+                      <td>{res.Type}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </td>  
+             </tr>
+              )
+            )}
+            </tbody>
+            </table>
             
-            ))}
-            </tbody></table>
           }
-           
-         
-      <div style={{ padding: "10px" }}>
-      <form>
-        <input
-          type="text"
-          onChange={this.onChange}
-          placeholder="add something in the database"
-          style={{ width: "200px" }}
-        />
-        <button onClick={() => this.putDataToDB(this.state.message)}>
-          ADD
-        </button>
-        </form>
-      </div>
+       {
+       this.state.favorito &&
+       <div>
+         <h2>Listado de Peliculas favoritas</h2>
+            { this.state.listFavoritos.map((pelicula, index) => {
+                 return <ListFavorito key={index}
+                 title={pelicula} />
+            })}
+       </div>
+      }    
     </div>
     );
     }
